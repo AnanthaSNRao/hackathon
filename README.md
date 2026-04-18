@@ -145,3 +145,32 @@ biomed-ipo-workflow-runner.js
   -> paper-review-agent.md
   -> final merged report
 ```
+
+## Mermaid diagram
+
+```mermaid
+flowchart TD
+    A[biomed-ipo-workflow-runner.js] --> B{Mode}
+
+    B -->|Standard| C[biomed-ipo-scout-agent.md]
+    B -->|Quick| D[staticData/ipo_list.txt]
+    D --> E[Local paper files in staticData/]
+
+    C --> F[research-agent.md]
+    E --> F
+
+    F --> G[research-to-review-collector-agent.md]
+    G --> H[paper-review-fanout-agent.md]
+    H --> I[paper-review-agent.md]
+    I --> J[Final merged report]
+
+    subgraph Serial Steps
+      C
+      G
+    end
+
+    subgraph Parallelizable Steps
+      F
+      I
+    end
+```

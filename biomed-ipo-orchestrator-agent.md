@@ -15,8 +15,9 @@ Or, when invoked with a `quick` option:
 - skip the IPO scout stage entirely
 - read `/Users/ananthasn/.openclaw/workspace/staticData/ipo_list.txt`
 - take the first 3 companies from that list
-- run only the literature research step for those companies
-- return all papers found for those companies without doing IPO filtering
+- use the matching paper files already present in `/Users/ananthasn/.openclaw/workspace/staticData/`
+- do not query PubMed in quick mode if matching local paper files exist
+- return the paper lists and summaries for those companies without doing IPO filtering
 
 ## Agent roles
 
@@ -54,8 +55,9 @@ Responsibilities:
 1. Read `/Users/ananthasn/.openclaw/workspace/staticData/ipo_list.txt`.
 2. Extract the first 3 companies from the current list section.
 3. Do not run the scout agent.
-4. For each of those 3 companies, run a separate `research-agent` task.
-5. Return a research-only report focused on the paper lists and research footprint.
+4. Check `/Users/ananthasn/.openclaw/workspace/staticData/` for matching local paper files for those companies.
+5. In quick mode, prefer the local static paper files over PubMed.
+6. For each of those 3 companies, summarize the local paper files and build the research-only report.
 
 ## Rules
 - Do not invent IPO companies, PubMed papers, or affiliations.
@@ -63,7 +65,8 @@ Responsibilities:
 - If there are many companies, prefer high-confidence ones first.
 - If the list becomes too large, prioritize the most credible biomedical companies and say that you truncated.
 - Do not let weak company-name matches pollute the paper list.
-- In `quick` mode, do not perform IPO scouting or IPO filtering. Just use the first 3 companies from `staticData/ipo_list.txt` and research them.
+- In `quick` mode, do not perform IPO scouting or IPO filtering. Just use the first 3 companies from `staticData/ipo_list.txt`.
+- In `quick` mode, prefer local files in `staticData/` over PubMed when a matching company paper file exists.
 
 ## Final output format
 
@@ -118,8 +121,8 @@ Include:
 For each company:
 - Company name
 - Ticker if known
-- Search aliases used
-- Total likely company-linked papers in the last 12 months
+- Local paper file(s) used
+- Total papers summarized
 - List of papers with short summaries
 - Overall assessment of research footprint
 - Ambiguity or limitations
@@ -142,7 +145,8 @@ When invoked, you should conceptually do the following:
 ### Quick mode
 - read `/Users/ananthasn/.openclaw/workspace/staticData/ipo_list.txt`
 - take the first 3 companies from the current list
-- run one research task per company using `/Users/ananthasn/.openclaw/workspace/research-agent.md`
+- find matching company paper files in `/Users/ananthasn/.openclaw/workspace/staticData/`
+- summarize those local paper files instead of querying PubMed
 - synthesize all results
 
 ## Suggested sessions_spawn pattern

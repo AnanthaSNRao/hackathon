@@ -66,7 +66,9 @@ A fully automatic end-to-end executor would require a supported external API or 
 2. The runner reads `staticData/ipo_list.txt`.
 3. It takes the first 3 companies only.
 4. It skips scout completely.
-5. Use the generated research payloads to fetch all papers for those 3 companies.
+5. It looks for matching paper files already stored in `staticData/` for those companies.
+6. In quick mode, those local files are used instead of PubMed.
+7. Use the generated payloads to summarize those local papers for the 3 companies.
 
 ## Review collection layer
 After research-agent runs finish, you can add a collector stage:

@@ -17,7 +17,7 @@ Recommended execution: up to 2 research-agent runs in parallel after scout outpu
 ### Company 1: Alamar Biosciences
 ```json
 {
-  "task": "Read /Users/ananthasn/.openclaw/workspace/research-agent.md and follow it exactly.\n\nHandoff input:\nCompany: Alamar Biosciences\nTicker: ALMR\nIPO status: quick-list\nIPO date context: Loaded from staticData/ipo_list.txt quick mode\nBusiness summary: Loaded from static quick IPO list; business summary not enriched in quick mode\nPubMed search targets:\n- Alamar Biosciences\n- ALMR\nResearch task for research-agent:\n- Search PubMed for papers from the last 12 months associated with this company.\n- Look for author affiliations, corporate funding statements, and company names in affiliation fields.\n- List all likely company-linked papers.\n- Summarize the topic of each paper in 1 sentence.\n- Flag ambiguous matches.",
+  "task": "Use the local paper files below instead of PubMed. Read each file and summarize the paper(s) for the target company.\n\nCompany: Alamar Biosciences\nTicker: ALMR\nLocal paper files:\n- /Users/ananthasn/.openclaw/workspace/staticData/ALMR 2026 tuenissen An acetylated Tau-174 CSF biomarker discriminates.pdf\n\nFor each file, extract the paper title, journal if visible, year/date if visible, and provide a short summary. Then give an overall assessment of the company's visible research footprint from these local files. Clearly note any limitations from using only local files.",
   "label": "research-agent-alamar-biosciences",
   "runtime": "subagent",
   "mode": "run",
@@ -29,7 +29,7 @@ Recommended execution: up to 2 research-agent runs in parallel after scout outpu
 ### Company 2: Kailera Therapeutics
 ```json
 {
-  "task": "Read /Users/ananthasn/.openclaw/workspace/research-agent.md and follow it exactly.\n\nHandoff input:\nCompany: Kailera Therapeutics\nTicker: KLRA\nIPO status: quick-list\nIPO date context: Loaded from staticData/ipo_list.txt quick mode\nBusiness summary: Loaded from static quick IPO list; business summary not enriched in quick mode\nPubMed search targets:\n- Kailera Therapeutics\n- KLRA\nResearch task for research-agent:\n- Search PubMed for papers from the last 12 months associated with this company.\n- Look for author affiliations, corporate funding statements, and company names in affiliation fields.\n- List all likely company-linked papers.\n- Summarize the topic of each paper in 1 sentence.\n- Flag ambiguous matches.",
+  "task": "Use the local paper files below instead of PubMed. Read each file and summarize the paper(s) for the target company.\n\nCompany: Kailera Therapeutics\nTicker: KLRA\nLocal paper files:\n- /Users/ananthasn/.openclaw/workspace/staticData/KLRA 2026 pop oral semaglutide.pdf\n\nFor each file, extract the paper title, journal if visible, year/date if visible, and provide a short summary. Then give an overall assessment of the company's visible research footprint from these local files. Clearly note any limitations from using only local files.",
   "label": "research-agent-kailera-therapeutics",
   "runtime": "subagent",
   "mode": "run",
@@ -41,7 +41,7 @@ Recommended execution: up to 2 research-agent runs in parallel after scout outpu
 ### Company 3: Encore Medical
 ```json
 {
-  "task": "Read /Users/ananthasn/.openclaw/workspace/research-agent.md and follow it exactly.\n\nHandoff input:\nCompany: Encore Medical\nTicker: EMI\nIPO status: quick-list\nIPO date context: Loaded from staticData/ipo_list.txt quick mode\nBusiness summary: Loaded from static quick IPO list; business summary not enriched in quick mode\nPubMed search targets:\n- Encore Medical\n- EMI\nResearch task for research-agent:\n- Search PubMed for papers from the last 12 months associated with this company.\n- Look for author affiliations, corporate funding statements, and company names in affiliation fields.\n- List all likely company-linked papers.\n- Summarize the topic of each paper in 1 sentence.\n- Flag ambiguous matches.",
+  "task": "Use the local paper files below instead of PubMed. Read each file and summarize the paper(s) for the target company.\n\nCompany: Encore Medical\nTicker: EMI\nLocal paper files:\n- /Users/ananthasn/.openclaw/workspace/staticData/EMI 2026.pdf\n\nFor each file, extract the paper title, journal if visible, year/date if visible, and provide a short summary. Then give an overall assessment of the company's visible research footprint from these local files. Clearly note any limitations from using only local files.",
   "label": "research-agent-encore-medical",
   "runtime": "subagent",
   "mode": "run",

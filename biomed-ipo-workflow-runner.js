@@ -9,6 +9,7 @@ const SCOUT_PROMPT = path.join(WORKSPACE, 'biomed-ipo-scout-agent.md');
 const RESEARCH_PROMPT = path.join(WORKSPACE, 'research-agent.md');
 const SYNTHESIS_PROMPT = path.join(WORKSPACE, 'biomed-ipo-orchestrator-agent.md');
 const QUICK_SOURCE = path.join(WORKSPACE, 'staticData', 'ipo_list.txt');
+const STATIC_DATA_DIR = path.join(WORKSPACE, 'staticData');
 
 function parseArgs(argv) {
   const args = {
@@ -112,9 +113,18 @@ function buildResearchPayload(company) {
   };
 }
 
-function buildQuickCompaniesFromText(text) {
+function findStaticPaperFiles(companyName, ticker) {
+  const normalizedName = String(companyName || '').toLowerCase();
+  const normalizedTicker = String(ticker || '').toLowerCase();
+  return [
+    `${ticker}`,
+    companyName,
+  ].filter(Boolean);
+}
+
+async function buildQuickCompaniesFromText(text) {
   const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
-  const companies = [];
+  const entries = [];
 
   for (const line of lines) {
     if (/^IPO LIST/i.test(line) || /^OLDER/i.test(line)) continue;
@@ -122,18 +132,49 @@ function buildQuickCompaniesFromText(text) {
     if (!match) continue;
     const ticker = match[1].trim();
     const companyName = match[2].trim().replace(/[—–-]\s*$/, '');
-    companies.push({
+    entries.push({ ticker, companyName });
+    if (entries.length >= 3) break;
+  }
+
+  const staticFiles = await fs.readdir(STATIC_DATA_DIR);
+
+  return entries.map(({ ticker, companyName }) => {
+    const localPaperFiles = staticFiles
+      .filter((file) => file !== 'ipo_list.txt')
+      .filter((file) => file.toLowerCase().includes(ticker.toLowerCase()) || file.toLowerCase().includes(companyName.toLowerCase()))
+      .map((file) => path.join(STATIC_DATA_DIR, file));
+
+    return {
       company: companyName,
       ticker,
       ipoStatus: 'quick-list',
       ipoDateContext: 'Loaded from staticData/ipo_list.txt quick mode',
       businessSummary: 'Loaded from static quick IPO list; business summary not enriched in quick mode',
       pubmedSearchTargets: [companyName, ticker],
-    });
-    if (companies.length >= 3) break;
-  }
+      localPaperFiles,
+    };
+  });
+}
 
-  return companies;
+function buildQuickResearchPayload(company) {
+  const nameSlug = String(company.company || 'company')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'company';
+
+  const files = Array.isArray(company.localPaperFiles) && company.localPaperFiles.length
+    ? company.localPaperFiles.map((x) => `- ${x}`).join('\n')
+    : '- <no local paper files found>';
+
+  return {
+    task: `Use the local paper files below instead of PubMed. Read each file and summarize the paper(s) for the target company.\n\nCompany: ${company.company || 'unknown'}\nTicker: ${company.ticker || 'unknown'}\nLocal paper files:\n${files}\n\nFor each file, extract the paper title, journal if visible, year/date if visible, and provide a short summary. Then give an overall assessment of the company's visible research footprint from these local files. Clearly note any limitations from using only local files.`,
+    label: `research-agent-${nameSlug}`,
+    runtime: 'subagent',
+    mode: 'run',
+    cleanup: 'delete',
+    lightContext: true,
+  };
 }
 
 function buildReport(companies, maxParallel, options = {}) {
@@ -169,7 +210,7 @@ function buildReport(companies, maxParallel, options = {}) {
   companies.forEach((company, index) => {
     lines.push(`### Company ${index + 1}: ${company.company || 'unknown'}`);
     lines.push('```json');
-    lines.push(JSON.stringify(buildResearchPayload(company), null, 2));
+    lines.push(JSON.stringify(options.quick ? buildQuickResearchPayload(company) : buildResearchPayload(company), null, 2));
     lines.push('```');
     lines.push('');
   });
@@ -209,7 +250,7 @@ async function main() {
 
   if (args.quick) {
     const quickText = await fs.readFile(QUICK_SOURCE, 'utf8');
-    companies = buildQuickCompaniesFromText(quickText);
+    companies = await buildQuickCompaniesFromText(quickText);
   } else {
     if (!args.companiesFile) {
       throw new Error('Missing required --companies-file (or use --quick or --dry-run)');

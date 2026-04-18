@@ -11,6 +11,8 @@ This workflow is the reliable version of the orchestrator.
 ## Files involved
 - `biomed-ipo-scout-agent.md`
 - `research-agent.md`
+- `research-to-review-collector-agent.md`
+- `paper-review-agent.md`
 - `biomed-ipo-orchestrator-agent.md`
 - `run-biomed-ipo-workflow.sh`
 - `biomed-ipo-workflow-runner.js`
@@ -66,9 +68,20 @@ A fully automatic end-to-end executor would require a supported external API or 
 4. It skips scout completely.
 5. Use the generated research payloads to fetch all papers for those 3 companies.
 
+## Review collection layer
+After research-agent runs finish, you can add a collector stage:
+1. Feed one or more research-agent outputs into `research-to-review-collector-agent.md`
+2. Let it choose high-confidence company-linked papers only
+3. Generate one handoff per selected paper for `paper-review-agent.md`
+4. Run those paper reviews in bounded parallelism
+
+This is a good place to parallelize, because paper reviews are independent once the paper-selection step is done.
+
 ## Recommended future improvement
 If OpenClaw exposes a stable external API/SDK for subagent orchestration, the next step is to upgrade this runner so it:
 - parses scout output automatically
 - launches research subagents automatically
 - waits for completion
+- routes research outputs through the collector agent automatically
+- launches paper-review subagents automatically
 - assembles the final report automatically

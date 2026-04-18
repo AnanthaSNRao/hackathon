@@ -23,12 +23,11 @@ It is more production-like because the steps are separated cleanly.
 Use:
 - `node biomed-ipo-workflow-runner.js --dry-run`
 - `node biomed-ipo-workflow-runner.js --companies-file companies.json --max-parallel 2 --output report.md`
+- `node biomed-ipo-workflow-runner.js --quick --max-parallel 2 --output report.md`
 
 What the Node runner does:
-- prints a ready-to-use scout payload
-- reads a JSON array of company handoff blocks
-- generates one ready-to-use research payload per company
-- builds a merged report scaffold
+- in standard mode, prints a ready-to-use scout payload, reads handoff blocks, generates research payloads, and builds a merged report scaffold
+- in quick mode, reads `staticData/ipo_list.txt`, takes the first 3 companies, skips scout entirely, generates research payloads, and builds a research-only scaffold
 
 ## Parallelism guidance
 - Keep the scout step serial.
@@ -50,22 +49,22 @@ A fully automatic end-to-end executor would require a supported external API or 
 
 ## How to use
 
-### Step 1
-Run:
-- `node biomed-ipo-workflow-runner.js --dry-run`
+### Standard mode
+1. Run:
+   - `node biomed-ipo-workflow-runner.js --dry-run`
+2. Spawn the scout agent with the printed payload.
+3. Convert the scout handoff blocks into a JSON array file like `companies.json`.
+4. Run:
+   - `node biomed-ipo-workflow-runner.js --companies-file companies.json --max-parallel 2 --output report.md`
+5. Use the generated research payloads and final report scaffold to complete the run.
 
-### Step 2
-Spawn the scout agent with the printed payload.
-
-### Step 3
-Convert the scout handoff blocks into a JSON array file like `companies.json`.
-
-### Step 4
-Run:
-- `node biomed-ipo-workflow-runner.js --companies-file companies.json --max-parallel 2 --output report.md`
-
-### Step 5
-Use the generated research payloads and final report scaffold to complete the run.
+### Quick mode
+1. Run:
+   - `node biomed-ipo-workflow-runner.js --quick --max-parallel 2 --output quick-report.md`
+2. The runner reads `staticData/ipo_list.txt`.
+3. It takes the first 3 companies only.
+4. It skips scout completely.
+5. Use the generated research payloads to fetch all papers for those 3 companies.
 
 ## Recommended future improvement
 If OpenClaw exposes a stable external API/SDK for subagent orchestration, the next step is to upgrade this runner so it:

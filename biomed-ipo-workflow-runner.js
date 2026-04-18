@@ -8,6 +8,7 @@ const WORKSPACE = '/Users/ananthasn/.openclaw/workspace';
 const SCOUT_PROMPT = path.join(WORKSPACE, 'biomed-ipo-scout-agent.md');
 const RESEARCH_PROMPT = path.join(WORKSPACE, 'research-agent.md');
 const SYNTHESIS_PROMPT = path.join(WORKSPACE, 'biomed-ipo-orchestrator-agent.md');
+const QUICK_SOURCE = path.join(WORKSPACE, 'staticData', 'ipo_list.txt');
 
 function parseArgs(argv) {
   const args = {
@@ -15,6 +16,7 @@ function parseArgs(argv) {
     companiesFile: null,
     dryRun: false,
     output: null,
+    quick: false,
   };
 
   for (let i = 2; i < argv.length; i += 1) {
@@ -27,6 +29,8 @@ function parseArgs(argv) {
       args.output = argv[++i] || null;
     } else if (arg === '--dry-run') {
       args.dryRun = true;
+    } else if (arg === '--quick') {
+      args.quick = true;
     } else if (arg === '--help' || arg === '-h') {
       printHelp();
       process.exit(0);
@@ -47,13 +51,21 @@ function printHelp() {
 
 Usage:
   node biomed-ipo-workflow-runner.js --companies-file companies.json [--max-parallel 2] [--output report.md]
+  node biomed-ipo-workflow-runner.js --quick [--max-parallel 2] [--output report.md]
   node biomed-ipo-workflow-runner.js --dry-run
 
 What it does:
-  1. Prints a ready-to-use scout sessions_spawn payload
-  2. Reads a JSON file of company handoff blocks after you obtain scout output
-  3. Prints ready-to-use research sessions_spawn payloads
-  4. Produces a merged markdown report scaffold
+  Standard mode:
+    1. Prints a ready-to-use scout sessions_spawn payload
+    2. Reads a JSON file of company handoff blocks after you obtain scout output
+    3. Prints ready-to-use research sessions_spawn payloads
+    4. Produces a merged markdown report scaffold
+
+  Quick mode:
+    1. Reads ${QUICK_SOURCE}
+    2. Takes the first 3 companies from the current list
+    3. Skips scout entirely
+    4. Produces ready-to-use research sessions_spawn payloads and a report scaffold
 
 Why this design:
   OpenClaw tool APIs are available inside agent runs, not directly from a local script.
@@ -61,6 +73,7 @@ Why this design:
 
 Arguments:
   --companies-file   JSON file containing an array of company handoff objects
+  --quick            Skip scout and use the first 3 companies from staticData/ipo_list.txt
   --max-parallel     Bounded parallelism hint for research fan-out (default: 2)
   --output           Write merged report scaffold to this path
   --dry-run          Print the scout payload and an example companies file shape
@@ -99,18 +112,56 @@ function buildResearchPayload(company) {
   };
 }
 
-function buildReport(companies, maxParallel) {
+function buildQuickCompaniesFromText(text) {
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  const companies = [];
+
+  for (const line of lines) {
+    if (/^IPO LIST/i.test(line) || /^OLDER/i.test(line)) continue;
+    const match = line.match(/^([A-Z0-9]+)\s+(.+?)\s+-\s+/);
+    if (!match) continue;
+    const ticker = match[1].trim();
+    const companyName = match[2].trim().replace(/[—–-]\s*$/, '');
+    companies.push({
+      company: companyName,
+      ticker,
+      ipoStatus: 'quick-list',
+      ipoDateContext: 'Loaded from staticData/ipo_list.txt quick mode',
+      businessSummary: 'Loaded from static quick IPO list; business summary not enriched in quick mode',
+      pubmedSearchTargets: [companyName, ticker],
+    });
+    if (companies.length >= 3) break;
+  }
+
+  return companies;
+}
+
+function buildReport(companies, maxParallel, options = {}) {
   const lines = [];
   lines.push('# Biomedical IPO workflow run');
   lines.push('');
   lines.push(`Parallel research hint used: ${maxParallel}`);
   lines.push('');
-  lines.push('## Scout phase');
-  lines.push('Run this payload first:');
-  lines.push('```json');
-  lines.push(JSON.stringify(buildScoutPayload(), null, 2));
-  lines.push('```');
-  lines.push('');
+
+  if (options.quick) {
+    lines.push('## Quick mode');
+    lines.push(`Source file used: ${QUICK_SOURCE}`);
+    lines.push('Scout step skipped.');
+    lines.push('');
+    lines.push('## Quick-source companies');
+    companies.forEach((company, index) => {
+      lines.push(`${index + 1}. ${company.company} (${company.ticker || 'unknown'})`);
+    });
+    lines.push('');
+  } else {
+    lines.push('## Scout phase');
+    lines.push('Run this payload first:');
+    lines.push('```json');
+    lines.push(JSON.stringify(buildScoutPayload(), null, 2));
+    lines.push('```');
+    lines.push('');
+  }
+
   lines.push('## Research fan-out phase');
   lines.push(`Recommended execution: up to ${maxParallel} research-agent runs in parallel after scout output is reviewed.`);
   lines.push('');
@@ -154,18 +205,25 @@ async function main() {
     return;
   }
 
-  if (!args.companiesFile) {
-    throw new Error('Missing required --companies-file (or use --dry-run)');
+  let companies;
+
+  if (args.quick) {
+    const quickText = await fs.readFile(QUICK_SOURCE, 'utf8');
+    companies = buildQuickCompaniesFromText(quickText);
+  } else {
+    if (!args.companiesFile) {
+      throw new Error('Missing required --companies-file (or use --quick or --dry-run)');
+    }
+
+    const raw = await fs.readFile(path.resolve(args.companiesFile), 'utf8');
+    companies = JSON.parse(raw);
+
+    if (!Array.isArray(companies)) {
+      throw new Error('--companies-file must contain a JSON array');
+    }
   }
 
-  const raw = await fs.readFile(path.resolve(args.companiesFile), 'utf8');
-  const companies = JSON.parse(raw);
-
-  if (!Array.isArray(companies)) {
-    throw new Error('--companies-file must contain a JSON array');
-  }
-
-  const report = buildReport(companies, args.maxParallel);
+  const report = buildReport(companies, args.maxParallel, { quick: args.quick });
 
   if (args.output) {
     await fs.writeFile(path.resolve(args.output), report, 'utf8');
